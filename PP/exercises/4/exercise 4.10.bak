@@ -1,0 +1,23 @@
+#lang racket
+(define (for-all lst p)
+  (cond
+    ((p (car lst)) 1)
+    )
+  (for-all (cdr lst) p)
+  )
+
+
+(for-all (list 1 2 3) ())
+ 
+
+
+;;(define (there-exists lst p)
+
+  ;;)
+
+
+
+;;(define (there-exists-1 lst p)
+
+
+ ;;)

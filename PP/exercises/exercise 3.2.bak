@@ -1,0 +1,9 @@
+#lang racket
+
+(define (replicate-to-length lst1 num counter res)
+  (cond (< num counter) res)
+  (else (replicate-to-length lst num (+ counter 1) res))
+  )
+
+
+(replicate-to-length '(a b c) 8)
