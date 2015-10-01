@@ -17,7 +17,7 @@
 (define (there-exists-1 lst p counter)
   (if (null? lst)
       (counterFunc counter)
-      (if (p (car lst)) (there-exists-1 lst p (+ counter 1)) (there-exists-1 (cdr lst) p counter))
+      (if (p (car lst)) (there-exists-1 (cdr lst) p (+ counter 1)) (there-exists-1 (cdr lst) p counter))
    )
   )
 
@@ -25,4 +25,14 @@
   (if (= counter 1) #t #f) 
   )
 
-(there-exists-1 (list 1 3 5 6) number? 0)
+(there-exists-1 (list 1 2 5 8) (lambda (x) (< 5 x)) 0)
+
+
+
+(define test-lamb(lambda(x y) (
+    lambda(b) (+ b 4)
+  )))
+
+((test-lamb 3 5) 4)
+
+  

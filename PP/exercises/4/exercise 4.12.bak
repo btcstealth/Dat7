@@ -1,0 +1,10 @@
+#lang racket
+; AUX functions:
+(define (square a)
+  (mult a a))
+
+(define (mult a b)
+  (* a b))
+
+(define (sub a b)
+  (- a b))
