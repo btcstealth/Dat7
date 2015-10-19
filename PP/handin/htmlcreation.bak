@@ -1,0 +1,28 @@
+#lang racket
+(define tagCreator(lambda(tag)
+                    (lambda(attributes . content)
+                      (if (string? content)
+                          (string-append "<"tag">" content "</"tag">")
+                          (string-append "<"tag">" (car content) (list-ref content 1) "</"tag">") ))))
+  
+(define html(tagCreator "html"))
+(define head(tagCreator "head"))
+(define body(tagCreator "body"))
+(define table(tagCreator "table"))
+(define span(tagCreator "span"))
+(define h1(tagCreator "h1"))
+
+(html "attributes" (head "attributes" "test" "test2") (body "attributes" "test" "test2"))
+
+;(define html(lambda(x)
+;               (string-append "<html>" x "</html>")))
+
+;(html "test")
+
+;(string-append "Apple" "Banana")
+
+;(body
+;   (ol (list 'id "demo" 'start "3")
+;       (list
+;         (li "one") (li "one") (li "two"))))
+
