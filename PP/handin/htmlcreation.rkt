@@ -71,6 +71,33 @@ Functions for handling the time for each
                           "the format of minute is unacceptable")))
 
 #|
+Function for calculating the time in minutes
+|#
+(define calcTimeMinutes (lambda (time)
+                   (+ (calcYear (car time)) (calcMonth (list-ref time 1)) (calcDay (list-ref time 2)) (calcHour (list-ref time 3)) (calcMinute (list-ref time 4)))))
+
+(define calcYear (lambda (year)
+                   (* year 12 31 24 60)))
+
+(define calcMonth (lambda (month)
+                    (* month 31 24 60)))
+
+(define calcDay (lambda (day)
+                  (* day 24 60)))
+
+(define calcHour (lambda (hour)
+                   (* hour 60)))
+
+(define calcMinute (lambda (minute)
+                      minute))
+
+(if (< (calcTimeMinutes (createTime 2015 1 1 0 0)) (calcTimeMinutes (createTime 2014 12 31 23 59)))
+    't
+    'f
+    ) 
+
+                   
+#|
 Functions for getting different elements from the appointment time list
 |#
 (define get-year first)
@@ -79,16 +106,21 @@ Functions for getting different elements from the appointment time list
 (define get-hour fourth)
 (define get-minute fifth)
 
+
 #|
 Internal calender representation: The root is a calender which is a list of appointments
 |#
-
 (define createAppointment( lambda(time content)
                             (list time content)))
 
-(createAppointment (createTime 2005 11 24 23 55) "my content")                              
+#|
+(define createCalender( lambda apt1
+                         (list apt1)))
+|#
 
-
+(list (createAppointment (createTime 2005 11 24 23 55) "my content") (createAppointment (createTime 2005 11 24 23 55) "my content") (createAppointment (createTime 2005 11 24 23 55) "my content"))                              
+  
+  
 
 
 
