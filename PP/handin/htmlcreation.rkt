@@ -73,52 +73,60 @@ Functions for handling the time for each
 #|
 Function for calculating the time in minutes
 |#
-(define calcTimeMinutes (lambda (time)
+(define calcTimeSeconds (lambda (time)
                    (+ (calcYear (car time)) (calcMonth (list-ref time 1)) (calcDay (list-ref time 2)) (calcHour (list-ref time 3)) (calcMinute (list-ref time 4)))))
 
 (define calcYear (lambda (year)
-                   (* year 12 31 24 60)))
+                   (* year 12 31 24 60 60)))
 
 (define calcMonth (lambda (month)
-                    (* month 31 24 60)))
+                    (* month 31 24 60 60)))
 
 (define calcDay (lambda (day)
-                  (* day 24 60)))
+                  (* day 24 60 60)))
 
 (define calcHour (lambda (hour)
-                   (* hour 60)))
+                   (* hour 60 60)))
 
 (define calcMinute (lambda (minute)
-                      minute))
+                   (* minute 60)))
 
-(if (< (calcTimeMinutes (createTime 2015 1 1 0 0)) (calcTimeMinutes (createTime 2014 12 31 23 59)))
+(if (< (calcTimeSeconds (createTime 2015 1 1 0 0)) (calcTimeSeconds (createTime 2014 12 31 23 59)))
     't
     'f
     ) 
+
+#|
+10^8 year
+10^6 month
+10^4 day
+10^2 hour
+10^1 min
+|#
 
                    
 #|
 Functions for getting different elements from the appointment time list
 |#
-(define get-year first)
-(define get-month second)
-(define get-day third)
-(define get-hour fourth)
-(define get-minute fifth)
+(define getYear first)
+(define getMonth second)
+(define getDay third)
+(define getHour fourth)
+(define getMinute fifth)
 
 
 #|
 Internal calender representation: The root is a calender which is a list of appointments
 |#
-(define createAppointment( lambda(time content)
-                            (list time content)))
+(define createAppointment( lambda(startTime endTime content)
+                            (list startTime endTime content)))
 
 #|
 (define createCalender( lambda apt1
                          (list apt1)))
 |#
 
-(list (createAppointment (createTime 2005 11 24 23 55) "my content") (createAppointment (createTime 2005 11 24 23 55) "my content") (createAppointment (createTime 2005 11 24 23 55) "my content"))                              
+(list (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content") (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content"))                              
   
   
 
