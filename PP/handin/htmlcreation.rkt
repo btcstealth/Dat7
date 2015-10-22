@@ -128,14 +128,16 @@ Functions for getting different elements from the appointment time list
 Internal calender representation: The root is a calender which is a list of appointments
 |#
 ;; add logic here to make sure that startTime and endTime has a specific max interval in between
+;; check that starttime is before endtime
 (define createAppointment( lambda(startTime endTime content)
                             (list startTime endTime content)))
+
 #|
 (define createCalender( lambda apt1
                          (list apt1)))
 |#
 
-(define createCalender( lambda(apt1 . aptn) (list "calendar" apt1 aptn)))
+(define createCalender( lambda(apt1 . aptn) (apply list "calendar" apt1 aptn)))
 
 
 
@@ -143,15 +145,17 @@ Internal calender representation: The root is a calender which is a list of appo
 Functions for parsing through the calendar
 |#
 (define parseCalendar( lambda(cal res)
-                        (if (empty? cal) res
-                            (cond (checkIfCalendar? cal) (parseCalendar (cdr cal) res)
-                                  (checkIfAppointment? cal) (parseCalendar (cdr cal) (cons res (car cal)))                                
+                        (if (empty? cal)
+                            res
+                            (cond ((checkIfCalendar? cal) (parseCalendar (cdr cal) res))
+                                  ((checkIfAppointment? cal) (parseCalendar (cdr cal) (cons (car cal) res)))
+                                  (else 'a) ;; for some reason run into else
                                   ))))
 
 (define checkIfCalendar?( lambda(cal)
                           (if (list? cal)
                                 (if (string? (car cal))
-                                      (equal? (car cal) "calendar")
+                                      (eqv? (car cal) "calendar")
                                       #f
                                       )
                                 #f)))
@@ -162,9 +166,20 @@ Functions for parsing through the calendar
                                  #f)))
 
 
-(parseCalendar (list "calendar" (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
+;;funktioner til at tjekke om calendar er legal...
+
+(define cal1 (createCalender (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
                 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
-                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")) '())
+                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")))
+
+;(checkIfAppointment? cal1)
+cal1
+(parseCalendar cal1 '())
+
+
+
+
+;(filter pred lst)
 
 
 
