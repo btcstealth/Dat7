@@ -91,10 +91,19 @@ Function for calculating the time in minutes
 (define calcMinute (lambda (minute)
                    (* minute 60)))
 
+;; do something to time to calc time since date
+(define isT1BiggerThanT2( lambda(time1 time2)
+                           (if (> (calcTimeSeconds time1) (calcTimeSeconds time2))
+                               't
+                               'f
+                               )))
+
+#|
 (if (< (calcTimeSeconds (createTime 2015 1 1 0 0)) (calcTimeSeconds (createTime 2014 12 31 23 59)))
-    't
-    'f
-    ) 
+                               't
+                               'f
+                               )
+|#
 
 #|
 10^8 year
@@ -118,22 +127,45 @@ Functions for getting different elements from the appointment time list
 #|
 Internal calender representation: The root is a calender which is a list of appointments
 |#
+;; add logic here to make sure that startTime and endTime has a specific max interval in between
 (define createAppointment( lambda(startTime endTime content)
                             (list startTime endTime content)))
-
 #|
 (define createCalender( lambda apt1
                          (list apt1)))
 |#
 
-(list (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content") (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content"))                              
-  
-  
+(define createCalender( lambda(apt1 . aptn) (list "calendar" apt1 aptn)))
 
 
 
-;; do something to time to calc time since date
-(define calcTimeSinceChineseNY( lambda(time) 's))
+#|
+Functions for parsing through the calendar
+|#
+(define parseCalendar( lambda(cal res)
+                        (if (empty? cal) res
+                            (cond (checkIfCalendar? cal) (parseCalendar (cdr cal) res)
+                                  (checkIfAppointment? cal) (parseCalendar (cdr cal) (cons res (car cal)))                                
+                                  ))))
+
+(define checkIfCalendar?( lambda(cal)
+                          (if (list? cal)
+                                (if (string? (car cal))
+                                      (equal? (car cal) "calendar")
+                                      #f
+                                      )
+                                #f)))
+
+(define checkIfAppointment?( lambda(cal)
+                             (if (list? cal)
+                                 (string? (list-ref cal 2))
+                                 #f)))
+
+
+(parseCalendar (list "calendar" (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
+                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
+                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")) '())
+
 
 
 (define findAttributeInLst(lambda(lst res)
@@ -154,5 +186,9 @@ Internal calender representation: The root is a calender which is a list of appo
                                 ]
                                 )))
 
-(findAttributeInLst (list (list 's 'b 'd) 'd 3 'g) '())
-;(findContentInLst (list 's "asf" 3 'g) '())
+;(findAttributeInLst (list (list 's 'b 'd) 'd 3 'g) '())
+#|
+(createCalender (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
+                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
+                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content"))
+|#
