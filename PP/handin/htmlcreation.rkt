@@ -3,7 +3,6 @@
 #|
 Functions for building the html reprentation
 |#
-
 (define tagCreator(lambda(tag)
                     (lambda(attributes . contents)
                       (helpFunc contents tag))))
@@ -48,7 +47,7 @@ Functions for handling the time for each
 (define checkYear (lambda (year)
                     (if (> year 0)
                         year
-                        "the format of year is unacceptable")))
+                        "Error: the format of year is unacceptable, year has be bigger than 0")))
 
 (define checkMonth (lambda (month)
                      (if (and (> month 0) (< month 13))
@@ -98,12 +97,25 @@ Function for calculating the time in minutes
                                'f
                                )))
 
-#|
-(if (< (calcTimeSeconds (createTime 2015 1 1 0 0)) (calcTimeSeconds (createTime 2014 12 31 23 59)))
-                               't
-                               'f
-                               )
-|#
+;; from-time < (car apt) < to-time or from-time < (car (cdr apt)) < to-time
+
+(define appointmentsInInterval?( lambda(apt from-time to-time)
+                                 (if (or
+                                      (and (< (calcTimeSeconds from-time) (calcTimeSeconds (car apt)))
+                                           (> (calcTimeSeconds to-time) (calcTimeSeconds (car apt))))
+                                      (and (< (calcTimeSeconds from-time) (calcTimeSeconds (car (cdr apt))))
+                                           (> (calcTimeSeconds to-time) (calcTimeSeconds (car (cdr apt))))))
+                                     #t
+                                     #f
+                                     )))
+
+(define present-appointments-in-interval (lambda(cal from-time to-time res)
+                                           (if (null? cal)
+                                               res
+                                               (if (appointmentsInInterval? (car (parseCalendar cal '())) from-time to-time)
+                                                   (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time (cons (car (parseCalendar cal '())) res))
+                                                   (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time res)
+                                                   )))) 
 
 #|
 10^8 year
@@ -128,18 +140,12 @@ Functions for getting different elements from the appointment time list
 Internal calender representation: The root is a calender which is a list of appointments
 |#
 ;; add logic here to make sure that startTime and endTime has a specific max interval in between
-;; check that starttime is before endtime
 (define createAppointment( lambda(startTime endTime content)
-                            (list startTime endTime content)))
-
-#|
-(define createCalender( lambda apt1
-                         (list apt1)))
-|#
+                            (if (< (calcTimeSeconds startTime) (calcTimeSeconds endTime))
+                                (list startTime endTime content)
+                                "Error: startTime has to be before endTime"))) ;;has to be changed to it completely stops
 
 (define createCalender( lambda(apt1 . aptn) (apply list "calendar" apt1 aptn)))
-
-
 
 #|
 Functions for parsing through the calendar
@@ -148,8 +154,9 @@ Functions for parsing through the calendar
                         (if (empty? cal)
                             res
                             (cond ((checkIfCalendar? cal) (parseCalendar (cdr cal) res))
-                                  ((checkIfAppointment? cal) (parseCalendar (cdr cal) (cons (car cal) res)))
-                                  (else 'a) ;; for some reason run into else
+                                  ((checkIfCalendar? (car cal)) (parseCalendar (car cal) res))
+                                  ((checkIfAppointment? (car cal)) (parseCalendar (cdr cal) (cons (car cal) res)))
+                                  (else (parseCalendar (cdr cal) res)) ;; for some reason run into else
                                   ))))
 
 (define checkIfCalendar?( lambda(cal)
@@ -160,27 +167,55 @@ Functions for parsing through the calendar
                                       )
                                 #f)))
 
+;;this needs fixing
 (define checkIfAppointment?( lambda(cal)
                              (if (list? cal)
-                                 (string? (list-ref cal 2))
+                                 (string? (last cal))
                                  #f)))
 
 
-;;funktioner til at tjekke om calendar er legal...
+;;husk at tilfoeje funktioner til at tjekke om calendar er legal...
+(define cal1 (createCalender
+              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3")
+              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content")
+              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content")
+              (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass2")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass1"))))
 
-(define cal1 (createCalender (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
-                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
-                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")))
-
-;(checkIfAppointment? cal1)
-cal1
+;cal1
 (parseCalendar cal1 '())
+;(car (parseCalendar cal1 '()))
+;(car (cdr (car (parseCalendar cal1 '()))))
+;(appointmentsInInterval? (car (cdr (parseCalendar cal1 '()))) (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54))
+(present-appointments-in-interval cal1 (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54) '())
 
 
+#|
+Other required functions
+|#
 
+;;add appointment
+;;delete appointment
 
-;(filter pred lst)
+(define find-appointments (lambda(cal pred)
+                            (filter pred (parseCalendar cal '()))
+                            ))
 
+(define find-first-appointment (lambda(cal pred)
+                                 (filter pred (parseCalendar cal '())) ;; add logic to only get earliest appointment
+                                 ))
+
+(define find-last-appointment (lambda(cal pred)
+                                 (filter pred (parseCalendar cal '())) ;; add logic to only get latest appointment
+                                 ))
+
+(define flatten-calendar (lambda(cal)
+                           (parseCalendar cal '()))) 
+
+;;(appointments-overlap? ap1 ap2)
+;;(calendars-overlap? cal1 cal2)
 
 
 (define findAttributeInLst(lambda(lst res)
