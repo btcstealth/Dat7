@@ -5,38 +5,47 @@ Functions for building the html reprentation
 |#
 (define tagCreator(lambda(tag)
                     (lambda(attributes . contents)
-                      (helpFunc contents tag))))
+                      ;contents
+                      (tagCreatorH attributes contents tag '())
+                      )))
 
-(define helpFunc(lambda(cont tag)
-                  (cond ((null? cont) "")
-                            ((string? cont) (string-append "<"tag">" cont "</"tag">"))
-                            ((list? cont) (helpFunc ((car cont) (list-ref cont 1) "</"tag">")))
-                            ;((list? cont) (helpFunc (string-append "<"tag">" (car cont) (list-ref cont 1) "</"tag">")))
-                            ;((list? cont) (string-append "<"tag">" (car cont) (list-ref cont 1) "</"tag">"))
-                            
-                            ((procedure? cont) (string-append cont))
-                            (else (string-append "<"tag">" (car cont) (list-ref cont 1) "</"tag">"))
-                            ;((string? (car cont)) (string-append (car cont)) (helpFunc (cdr cont) tag))
-                  )))
-
-;; (string-append (car lst) (cdr lst)) 
+(define tagCreatorH(lambda(attributes cont tag res)                   
+                     (cond ((null? cont) res)
+                           ((string? cont) (string-append "<"tag">" cont "</"tag">"))
+                           ((list? cont) (if (> (string-length attributes) 0)
+                                             (string-append "<"tag " " attributes ">" (car cont) (car (cdr cont)) "</"tag">")                 
+                                             (string-append "<"tag">" (car cont) (car (cdr cont)) "</"tag">")))
+                           ;((procedure? cont) (string-append cont))
+                           ;(else (string-append "<"tag">" (car cont) (list-ref cont 1) "</"tag">"))
+                           )))
 
 (define html(tagCreator "html"))
 (define head(tagCreator "head"))
 (define body(tagCreator "body"))
 (define table(tagCreator "table"))
-(define span(tagCreator "span"))
+(define tr(tagCreator "tr"))
+(define td(tagCreator "td"))
+(define ul(tagCreator "ul"))
+(define li(tagCreator "li"))
 (define h1(tagCreator "h1"))
 
 
-#|
-(html "attributes"
-      (head "attributes" "test" "")
-      (body "attributes" "" ""))
-|#
-
-;;(html "attributes" (list "test1" "test2") "")
-
+(html ""
+      (head "" "test" "test")
+      (body ""
+            (table "border='1' style='width:100%'"
+                   (tr ""
+                       (td "" "appointment1" "")
+                       (td "" "startTime" "")
+                       (td "" "endTime" "")) ;;this is not getting catched
+                   (tr ""
+                       (td "" "appointment2" "")
+                       (td "" "startTime" "")
+                       (td "" "endTime" "") "") ;;this is not getting catched
+                   (tr ""
+                       (td "" "appointment2" "")
+                       (td "" "startTime" "")
+                       (td "" "endTime" "")) "") "")) ;;this is not getting catched properly
 
 #|
 Functions for handling the time for each
@@ -52,22 +61,22 @@ Functions for handling the time for each
 (define checkMonth (lambda (month)
                      (if (and (> month 0) (< month 13))
                          month
-                         (error "the format of month is unacceptable"))))
+                         (error "the format of month is unacceptable, month has to be bigger than 0 and lower than 13"))))
 
 (define checkDay (lambda (day)
                    (if (and (> day 0) (< day 32))
                        day
-                       (error "the format of day is unacceptable"))))
+                       (error "the format of day is unacceptable, day has to be bigger than 0 and at most 31"))))
 
 (define checkHour (lambda (hour)
                     (if (and (> hour -1) (< hour 24))
                         hour
-                        (error "the format of hour is unacceptable"))))
+                        (error "the format of hour is unacceptable, hour can be between 0-23"))))
 
 (define checkMinute (lambda (minute)
-                      (if (and (> minute -1) (< minute 61))
+                      (if (and (> minute -1) (< minute 60))
                           minute
-                          (error "the format of minute is unacceptable"))))
+                          (error "the format of minute is unacceptable, minute has to be between 0-59"))))
 
 #|
 Function for calculating the time in minutes
@@ -213,7 +222,15 @@ Required functions
 |#
 
 (define present-calendar-html( lambda(cal from-time to-time)
-                                "not implemented")) ;;not made 
+                                (appointments-in-interval (parseCalendar cal1 '()) from-time to-time '()) ;;start with sorting the from-time to-time, then create html from the returned list
+                                )) 
+
+(define appointments-in-interval( lambda(cal from-time to-time res)
+                                 (if (empty? cal)
+                                     res
+                                     (if (appointmentsInInterval? (car cal) from-time to-time)
+                                         (appointments-in-interval (cdr cal) from-time to-time (cons (car cal) res))
+                                         (appointments-in-interval (cdr cal) from-time to-time res)))))
 
 (define find-appointments (lambda(cal pred)
                             (filter pred (parseCalendar cal '()))
@@ -257,6 +274,10 @@ Required functions
 (define calendars-overlap? (lambda(cal1 cal2)
                              "not implemented"))
 
+
+
+
+
 #|
 Ignore for now
 |#
@@ -279,6 +300,10 @@ Ignore for now
                                 )))
 
 ;(findAttributeInLst (list (list 's 'b 'd) 'd 3 'g) '())
+
+
+
+
 
 #|
 Testing functionality section
@@ -326,6 +351,10 @@ Testing functionality section
 
 (parseCalendar cal1 '())
 "-----------------------------------------"
-(find-appointments (parseCalendar cal1 '()) list?)
+(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 15 59)) ;; investigate if the entire appointments have to be within the interval or simply part of it...
+
+
+                       
+;(find-appointments (parseCalendar cal1 '()) list?)
 ;"-----------------------------------------"
-(find-first-appointment (parseCalendar cal1 '()) list?) 
+;(find-first-appointment (parseCalendar cal1 '()) list?) 
