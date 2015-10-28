@@ -47,27 +47,27 @@ Functions for handling the time for each
 (define checkYear (lambda (year)
                     (if (> year 0)
                         year
-                        "Error: the format of year is unacceptable, year has be bigger than 0")))
+                        (error "the format of year is unacceptable, year has be bigger than 0"))))
 
 (define checkMonth (lambda (month)
                      (if (and (> month 0) (< month 13))
                          month
-                         "the format of month is unacceptable")))
+                         (error "the format of month is unacceptable"))))
 
 (define checkDay (lambda (day)
                    (if (and (> day 0) (< day 32))
                        day
-                       "the format of day is unacceptable")))
+                       (error "the format of day is unacceptable"))))
 
 (define checkHour (lambda (hour)
                     (if (and (> hour -1) (< hour 24))
                         hour
-                        "the format of hour is unacceptable")))
+                        (error "the format of hour is unacceptable"))))
 
 (define checkMinute (lambda (minute)
                       (if (and (> minute -1) (< minute 61))
                           minute
-                          "the format of minute is unacceptable")))
+                          (error "the format of minute is unacceptable"))))
 
 #|
 Function for calculating the time in minutes
@@ -118,6 +118,7 @@ Function for calculating the time in minutes
                                                    )))) 
 
 #|
+Alternative:
 10^8 year
 10^6 month
 10^4 day
@@ -143,7 +144,7 @@ Internal calender representation: The root is a calender which is a list of appo
 (define createAppointment( lambda(startTime endTime content)
                             (if (< (calcTimeSeconds startTime) (calcTimeSeconds endTime))
                                 (list startTime endTime content)
-                                "Error: startTime has to be before endTime"))) ;;has to be changed to it completely stops
+                                (error "startTime has to be before endTime")))) ;;has to be changed to it completely stops
 
 (define createCalender( lambda(apt1 . aptn) (apply list "calendar" apt1 aptn)))
 
@@ -154,10 +155,21 @@ Functions for parsing through the calendar
                         (if (empty? cal)
                             res
                             (cond ((checkIfCalendar? cal) (parseCalendar (cdr cal) res))
-                                  ((checkIfCalendar? (car cal)) (parseCalendar (car cal) res))
+                                  ((checkIfCalendar? (car cal)) (append (parseCalendar (cdr cal) res) (parseCalendar (car cal) '()))) ; (flattenCal (car cal) cal res))
                                   ((checkIfAppointment? (car cal)) (parseCalendar (cdr cal) (cons (car cal) res)))
                                   (else (parseCalendar (cdr cal) res)) ;; for some reason run into else
                                   ))))
+
+#|
+(define flattenCal( lambda(cal calMem res)
+                     (if (empty? cal)
+                         (parseCalendar (cdr calMem) res)
+                         (cond ((checkIfCalendar? cal) (parseCalendar (cdr cal) res))
+                               ((checkIfCalendar? (car cal)) (flattenCal (cdr cal) calMem res))
+                               ((checkIfAppointment? (car cal)) (flattenCal (cdr cal) calMem (cons (car cal) res)))
+                               ))))
+|#
+
 
 (define checkIfCalendar?( lambda(cal)
                           (if (list? cal)
@@ -174,30 +186,30 @@ Functions for parsing through the calendar
                                  #f)))
 
 
-;;husk at tilfoeje funktioner til at tjekke om calendar er legal...
-(define cal1 (createCalender
-              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3")
-              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content")
-              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content")
-              (createCalender
-               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content") 
-               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass2")
-               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass1"))))
-
-;cal1
-(parseCalendar cal1 '())
-;(car (parseCalendar cal1 '()))
-;(car (cdr (car (parseCalendar cal1 '()))))
-;(appointmentsInInterval? (car (cdr (parseCalendar cal1 '()))) (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54))
-(present-appointments-in-interval cal1 (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54) '())
-
-
 #|
-Other required functions
+Required functions
 |#
 
 ;;add appointment
+(define addAppointmentToCalendar( lambda(cal apt)
+                                   (append (flatten-calendar cal) (list apt))))
+
+;;add calendar
+(define addCalendarToCalendar( lambda (cal addCal)
+                                (addAppointmentToCalendar cal addCal)))
+
 ;;delete appointment
+(define deleteAppointmentFromCalendar( lambda(cal apt)
+                                        (remv apt (flatten-calendar cal)))) ;; doesn't work for some reason
+
+;;delete calendar
+(define deleteCalendarFromCalendar( lambda(cal delCal)
+                                     (deleteAppointmentFromCalendar cal delCal)))
+                         
+
+(define present-calendar-html( lambda(cal from-time to-time)
+                                "not implemented")) ;;not made 
+
 
 (define find-appointments (lambda(cal pred)
                             (filter pred (parseCalendar cal '()))
@@ -212,12 +224,20 @@ Other required functions
                                  ))
 
 (define flatten-calendar (lambda(cal)
-                           (parseCalendar cal '()))) 
+                           (cons "calendar" (parseCalendar cal '())))) 
 
-;;(appointments-overlap? ap1 ap2)
-;;(calendars-overlap? cal1 cal2)
+(define appointments-overlap? (lambda(ap1 ap2)
+                                "not implemented"))
+
+(define calendars-overlap? (lambda(cal1 cal2)
+                             "not implemented"))
+;;compare: apt1 endTime < apt2 startTime && apt2 endTime < apt1 startTime 
 
 
+
+#|
+Ignore for now
+|#
 (define findAttributeInLst(lambda(lst res)
                             (if (empty? lst)
                                 res
@@ -237,8 +257,46 @@ Other required functions
                                 )))
 
 ;(findAttributeInLst (list (list 's 'b 'd) 'd 3 'g) '())
+
 #|
-(createCalender (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
-                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content")
-                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 54) "my content"))
+Testing functionality section
 |#
+;;husk at tilfoeje funktioner til at tjekke om calendar er legal...
+(define cal1 (createCalender
+              (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content1")
+               (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass1")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass2"))
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass3")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass4"))
+              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass5")
+              ;(createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content")
+              ;(createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content") 
+              (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content3") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass6")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass7")
+               (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content4") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass8")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass9")))
+              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "pass10")))
+
+;cal1
+;(appointmentsInInterval? (car (cdr (parseCalendar cal1 '()))) (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54))
+;(present-appointments-in-interval cal1 (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54) '())
+"-----------------------------------------"
+(flatten-calendar cal1) 
+"-----------------------------------------"
+;(addAppointmentToCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content22"))
+#|
+(addCalendarToCalendar cal1 (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass2")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass1")))
+|#
+;(deleteAppointmentFromCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content"))
+;(createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3")
+;"-----------------------------------------"
