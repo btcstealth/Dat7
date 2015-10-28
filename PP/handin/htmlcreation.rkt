@@ -90,15 +90,16 @@ Function for calculating the time in minutes
 (define calcMinute (lambda (minute)
                    (* minute 60)))
 
-;; do something to time to calc time since date
-(define isT1BiggerThanT2( lambda(time1 time2)
-                           (if (> (calcTimeSeconds time1) (calcTimeSeconds time2))
-                               't
-                               'f
-                               )))
+
+(define present-appointments-in-interval (lambda(cal from-time to-time res)
+                                           (if (null? cal)
+                                               res
+                                               (if (appointmentsInInterval? (car (parseCalendar cal '())) from-time to-time)
+                                                   (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time (cons (car (parseCalendar cal '())) res))
+                                                   (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time res)
+                                                   ))))
 
 ;; from-time < (car apt) < to-time or from-time < (car (cdr apt)) < to-time
-
 (define appointmentsInInterval?( lambda(apt from-time to-time)
                                  (if (or
                                       (and (< (calcTimeSeconds from-time) (calcTimeSeconds (car apt)))
@@ -108,14 +109,6 @@ Function for calculating the time in minutes
                                      #t
                                      #f
                                      )))
-
-(define present-appointments-in-interval (lambda(cal from-time to-time res)
-                                           (if (null? cal)
-                                               res
-                                               (if (appointmentsInInterval? (car (parseCalendar cal '())) from-time to-time)
-                                                   (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time (cons (car (parseCalendar cal '())) res))
-                                                   (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time res)
-                                                   )))) 
 
 #|
 Alternative:
@@ -144,7 +137,7 @@ Internal calender representation: The root is a calender which is a list of appo
 (define createAppointment( lambda(startTime endTime content)
                             (if (< (calcTimeSeconds startTime) (calcTimeSeconds endTime))
                                 (list startTime endTime content)
-                                (error "startTime has to be before endTime")))) ;;has to be changed to it completely stops
+                                (error "startTime of appointment has to be before endTime")))) ;;has to be changed to it completely stops
 
 (define createCalender( lambda(apt1 . aptn) (apply list "calendar" apt1 aptn)))
 
@@ -213,11 +206,12 @@ Required functions
                                           (deleteAppointmentHelper (cdr cal) apt res)
                                           (deleteAppointmentHelper (cdr cal) apt (cons (car cal) res))
                                           ))))
-
+#|
 ;;delete calendar
 (define deleteCalendarFromCalendar( lambda(cal delCal)
-                                     (deleteAppointmentFromCalendar cal delCal)))
-                         
+                                     "not implemented"))
+|#
+
 (define present-calendar-html( lambda(cal from-time to-time)
                                 "not implemented")) ;;not made 
 
@@ -226,18 +220,33 @@ Required functions
                             ))
 
 (define find-first-appointment (lambda(cal pred)
-                                 (filter pred (parseCalendar cal '())) ;; add logic to only get earliest appointment
+                                 (find-filtered-appointment (filter pred (parseCalendar cal '())) "first" '()) ;; add logic to only get earliest appointment
                                  ))
 
 (define find-last-appointment (lambda(cal pred)
-                                 (filter pred (parseCalendar cal '())) ;; add logic to only get latest appointment
+                                 (find-filtered-appointment (filter pred (parseCalendar cal '())) "last" '()) ;; add logic to only get latest appointment
                                  ))
+
+(define find-filtered-appointment (lambda(cal marker res)
+                                    (if (empty? cal)
+                                        res
+                                        (if (equal? marker "first")
+                                            (cond ((empty? res) (find-filtered-appointment (cdr cal) "first" (car cal)))
+                                                  ((< (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "first" (car cal)))
+                                                  ((> (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "first" res))
+                                                  )
+                                            (cond ((empty? res) (find-filtered-appointment (cdr cal) "last" (car cal)))
+                                                  ((> (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "last" (car cal)))
+                                                  ((< (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "last" res))
+                                                  )
+                                        ))))
+
 
 (define flatten-calendar (lambda(cal)
                            (cons "calendar" (parseCalendar cal '())))) 
 
 (define appointments-overlap? (lambda(ap1 ap2)
-                                (if ((and (checkIfAppointment? ap1) (checkIfAppointment? ap2)))
+                                (if (and (checkIfAppointment? ap1) (checkIfAppointment? ap2))
                                     (cond ((< (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car ap2))) #f)
                                           ((< (calcTimeSeconds (car (cdr ap2))) (calcTimeSeconds (car ap1))) #f)
                                           ((and (= (calcTimeSeconds (car ap1)) (calcTimeSeconds (car ap2))) (= (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car (cdr ap2))))) #t)
@@ -284,9 +293,7 @@ Testing functionality section
                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass2"))
                (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass3")
                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass4"))
-              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass5")
-              ;(createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content")
-              ;(createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content") 
+              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass5")   
               (createCalender
                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content3") 
                (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass6")
@@ -301,7 +308,7 @@ Testing functionality section
 ;(appointmentsInInterval? (car (cdr (parseCalendar cal1 '()))) (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54))
 ;(present-appointments-in-interval cal1 (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54) '())
 "-----------------------------------------"
-(flatten-calendar cal1) 
+;(flatten-calendar cal1) 
 "-----------------------------------------"
 ;(addAppointmentToCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content22"))
 #|
@@ -310,5 +317,15 @@ Testing functionality section
                (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass2")
                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass1")))
 |#
-(deleteAppointmentFromCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2"))
+;(deleteAppointmentFromCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2"))
+;(appointments-overlap? (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3") (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3"))
 ;(createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3")
+;(createAppointment (createTime 2005 11 24 11 58) (createTime 2005 11 24 13 59) "pass3")
+;(appointments-overlap? (createAppointment (createTime 2005 11 24 13 57) (createTime 2005 11 24 13 59) "pass3") (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 57) "pass3"))
+
+
+;(parseCalendar cal1 '())
+;"-----------------------------------------"
+;(find-appointments (parseCalendar cal1 '()) list?)
+;"-----------------------------------------"
+(find-first-appointment (parseCalendar cal1 '()) list?) 
