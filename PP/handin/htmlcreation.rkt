@@ -324,8 +324,8 @@ Testing functionality section
 ;(appointments-overlap? (createAppointment (createTime 2005 11 24 13 57) (createTime 2005 11 24 13 59) "pass3") (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 57) "pass3"))
 
 
-;(parseCalendar cal1 '())
-;"-----------------------------------------"
-;(find-appointments (parseCalendar cal1 '()) list?)
+(parseCalendar cal1 '())
+"-----------------------------------------"
+(find-appointments (parseCalendar cal1 '()) list?)
 ;"-----------------------------------------"
 (find-first-appointment (parseCalendar cal1 '()) list?) 
