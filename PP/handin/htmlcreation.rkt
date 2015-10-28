@@ -31,7 +31,7 @@ Functions for building the html reprentation
 
 
 (html ""
-      (head "" "test" "test")
+      (head "" "entered startTime" " entered endTime")
       (body ""
             (table "border='1' style='width:100%'"
                    (tr ""
