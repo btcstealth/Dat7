@@ -179,7 +179,6 @@ Functions for parsing through the calendar
                                       )
                                 #f)))
 
-;;this needs fixing
 (define checkIfAppointment?( lambda(cal)
                              (if (list? cal)
                                  (string? (last cal))
@@ -195,21 +194,32 @@ Required functions
                                    (append (flatten-calendar cal) (list apt))))
 
 ;;add calendar
-(define addCalendarToCalendar( lambda (cal addCal)
+(define addCalendarToCalendar( lambda(cal addCal)
                                 (addAppointmentToCalendar cal addCal)))
 
 ;;delete appointment
 (define deleteAppointmentFromCalendar( lambda(cal apt)
-                                        (remv apt (flatten-calendar cal)))) ;; doesn't work for some reason
+                                        (deleteAppointmentHelper (parseCalendar cal '()) apt '())
+                                        ))
+
+(define deleteAppointmentHelper( lambda(cal apt res)
+                                  (if (empty? cal)
+                                      res
+                                      (if (and
+                                           (eqv? (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car apt)))
+                                           (eqv? (calcTimeSeconds (car (cdr (car cal)))) (calcTimeSeconds (car (cdr apt))))
+                                           (equal? (car (cdr (cdr (car cal)))) (car (cdr (cdr apt))))
+                                           )
+                                          (deleteAppointmentHelper (cdr cal) apt res)
+                                          (deleteAppointmentHelper (cdr cal) apt (cons (car cal) res))
+                                          ))))
 
 ;;delete calendar
 (define deleteCalendarFromCalendar( lambda(cal delCal)
                                      (deleteAppointmentFromCalendar cal delCal)))
                          
-
 (define present-calendar-html( lambda(cal from-time to-time)
                                 "not implemented")) ;;not made 
-
 
 (define find-appointments (lambda(cal pred)
                             (filter pred (parseCalendar cal '()))
@@ -227,13 +237,16 @@ Required functions
                            (cons "calendar" (parseCalendar cal '())))) 
 
 (define appointments-overlap? (lambda(ap1 ap2)
-                                "not implemented"))
+                                (if ((and (checkIfAppointment? ap1) (checkIfAppointment? ap2)))
+                                    (cond ((< (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car ap2))) #f)
+                                          ((< (calcTimeSeconds (car (cdr ap2))) (calcTimeSeconds (car ap1))) #f)
+                                          ((and (= (calcTimeSeconds (car ap1)) (calcTimeSeconds (car ap2))) (= (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car (cdr ap2))))) #t)
+                                          (else #t)
+                                          )
+                                    #f)))
 
 (define calendars-overlap? (lambda(cal1 cal2)
                              "not implemented"))
-;;compare: apt1 endTime < apt2 startTime && apt2 endTime < apt1 startTime 
-
-
 
 #|
 Ignore for now
@@ -297,6 +310,5 @@ Testing functionality section
                (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass2")
                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass1")))
 |#
-;(deleteAppointmentFromCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content"))
+(deleteAppointmentFromCalendar cal1 (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2"))
 ;(createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass3")
-;"-----------------------------------------"
