@@ -28,15 +28,7 @@ Functions for building the html reprentation
                              (string-append " " attributes)
                              ""
                              )
-                         ))
-                                                   
-                                     #|        
-                                 (if (> (string-length attributes) 0)
-                                     (tagCreatorH attributes (cdr cont) tag (string-append res "<"tag " " attributes ">" (car cont) "</"tag">"))
-                                     (tagCreatorH attributes (cdr cont) tag (string-append res "<"tag">" (car cont) "</"tag">")))
-                                 (tagCreatorH attributes (cdr cont) tag res))
-|#
-
+                         ))                                                   
 
 (define html(tagCreator "html"))
 (define head(tagCreator "head"))
@@ -48,24 +40,6 @@ Functions for building the html reprentation
 (define li(tagCreator "li"))
 (define h1(tagCreator "h1"))
 
-#|
-(html ""
-      (head "" "entered startTime" " entered endTime")
-      (body ""
-            (table "border='1' style='width:100%'"
-                   (tr ""
-                       (td "" "appointment1" "")
-                       (td "" "startTime" "")
-                       (td "" "endTime" "")) ;;this is not getting catched
-                   (tr ""
-                       (td "" "appointment2" "")
-                       (td "" "startTime" "")
-                       (td "" "endTime" "") "") ;;this is not getting catched
-                   (tr ""
-                       (td "" "appointment2" "")
-                       (td "" "startTime" "")
-                       (td "" "endTime" "")) "") "")) ;;this is not getting catched properly
-|#
 
 #|
 Functions for handling the time for each
@@ -139,15 +113,6 @@ Function for calculating the time in minutes
                                         #t
                                         #f
                                         ))))
-
-#|
-Alternative:
-10^8 year
-10^6 month
-10^4 day
-10^2 hour
-10^1 min
-|#
 
 
 #|
@@ -258,32 +223,24 @@ Required functions
 
 (define create-calendar-html( lambda(cal from-time to-time res)
                                (if (empty? cal)
-                                   res
-                                   (create-calendar-html (cdr cal) from-time to-time (appointment-to-html (car cal) from-time to-time))
+                                   (html ""
+                                         (head "" "" "")
+                                         (body ""
+                                               (table "border='1' style='width:100%'"
+                                                      (tr ""
+                                                          (td "" "Appointments" "")
+                                                          (td "" "from-time: " (convert-time-toString from-time))
+                                                          (td "" "to-time: " (convert-time-toString to-time)))
+                                                      res)))
+                                   (create-calendar-html (cdr cal) from-time to-time (string-append (appointment-to-html (car cal)) res))
                                )))
 
-(define appointment-to-html( lambda(apt from-time to-time)                                                 
-                          (html ""
-                                (head "" "" "")
-                                (body "" 
-                                      (table "border='1' style='width:100%'"                                           
-                                             (tr ""
-                                                 (td "" "Appointments" "")
-                                                 (td "" "from-time: " (convert-time-toString from-time))
-                                                 (td "" "to-time: " (convert-time-toString to-time))) 
-                                             (tr ""
-                                                 (td "" "appointment1" "")
-                                                 (td "" (convert-appointment-toString apt) "")
-                                                 (td "" "endTime" "")) ;;this is not getting catched
-                                             (tr ""
-                                                 (td "" "appointment2" "")
-                                                 (td "" "startTime" "")
-                                                 (td "" "endTime" "")) ;;this is not getting catched
-                                             (tr ""
-                                                 (td "" "appointment2" "")
-                                                 (td "" "startTime" "")
-                                                 (td "" "endTime" "")) ;;this is not getting catched properly
-                                             "") "")) 
+(define appointment-to-html( lambda(apt)                                                  
+                              (tr ""
+                                  (td "" (getContent apt) "")
+                                  (td "" (convert-time-toString (getStartTime apt)) "")
+                                  (td "" (convert-time-toString (getEndTime apt)) "")) ;;this is not getting catched
+                                             
                           ))
 
 (define convert-appointment-toString( lambda(apt)
