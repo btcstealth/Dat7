@@ -462,7 +462,7 @@ Test appointment and calendar overlap function
 #|
 Test present-calendar-html and other html function 
 |#
-(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59))
+;(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59))
 ;(appointment-to-html (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass9") (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59))
 
 #|
@@ -472,3 +472,44 @@ Test present-calendar-html and other html function
 |#
 
 "------------------------------------------------------------------------------"
+(define create-weekly-calendar-html( lambda(cal from-time to-time counter res)
+                                      (if (empty? cal)                                         
+                                          (html ""
+                                                (head "" "" "")
+                                                (body ""
+                                                      (table "border='1' style='width:100%'"
+                                                             (tr ""
+                                                                 (td "" "Appointment content" "")
+                                                                 (td "" "from-time: " (convert-time-toString from-time))
+                                                                 (td "" "to-time: " (convert-time-toString to-time)))
+                                                             res
+                                                             )))
+                                          (if (or (equal? counter 1) (equal? counter 8) (equal? counter 15) (equal? counter 22) (equal? counter 29))
+                                              (create-weekly-calendar-html (cdr cal) from-time to-time (+ counter 1) ;;start with tr
+                                                                           (string-append (create-week-table-html (car cal) (constructDateList 1 '()) res) res))
+                                               ;;just do single tds
+                                                                           
+                                              )
+                                          
+                               )))
+
+(define constructDateList( lambda(currDate res)
+                   (if (< currDate 32)
+                       (constructDateList (+ currDate 1) (cons (list currDate 11) res))
+                       res
+                       )))
+
+(define create-week-table-html( lambda(cal dates res)
+                                 (if (empty? dates)
+                                     res
+                                     (tr ""
+                                         (create-week-table-html cal (cdr dates) (construct-td (number->string (car (car dates))) (number->string (car (cdr (car dates))))))))
+                                           ;(else (create-week-table-html cal (cdr dates) (+ counter 1) (construct-td (number->string (car (car dates))) (number->string (car (cdr (car dates)))))))
+                                    ))
+
+(define construct-td( lambda(day month)
+                       (td "" (string-append month "/" day) "")
+                       ))
+
+"---------------------------------"
+(create-weekly-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59) 1 "")
