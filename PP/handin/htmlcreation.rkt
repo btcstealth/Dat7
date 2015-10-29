@@ -4,20 +4,39 @@
 Functions for building the html reprentation
 |#
 (define tagCreator(lambda(tag)
-                    (lambda(attributes . contents)
-                      ;contents
-                      (tagCreatorH attributes contents tag '())
+                    (lambda(attributes . contents)  ;(lambda r)
+                      (tagCreatorH attributes contents tag)
                       )))
 
-(define tagCreatorH(lambda(attributes cont tag res)                   
-                     (cond ((null? cont) res)
-                           ((string? cont) (string-append "<"tag">" cont "</"tag">"))
-                           ((list? cont) (if (> (string-length attributes) 0)
-                                             (string-append "<"tag " " attributes ">" (car cont) (car (cdr cont)) "</"tag">")                 
-                                             (string-append "<"tag">" (car cont) (car (cdr cont)) "</"tag">")))
-                           ;((procedure? cont) (string-append cont))
-                           ;(else (string-append "<"tag">" (car cont) (list-ref cont 1) "</"tag">"))
-                           )))
+(define tagCreatorH(lambda(attributes cont tag)
+                     (if (empty? cont)
+                         ""
+                         (string-append "<" tag (findAttributes attributes) ">" (findContent cont) "</" tag ">") ;;add find attributes later
+                         )))
+
+
+(define findContent( lambda(cont)
+                      (if (empty? cont)
+                          ""
+                          (cond ((list? (car cont)) (string-append (car cont) (findContent (cdr cont))))
+                                ((string? (car cont)) (string-append (car cont) (findContent (cdr cont))))
+                                ((procedure? (car cont)) (string-append (car cont) (findContent (cdr cont))))
+                                ))))
+
+(define findAttributes( lambda(attributes)
+                         (if (> (string-length attributes) 0)
+                             (string-append " " attributes)
+                             ""
+                             )
+                         ))
+                                                   
+                                     #|        
+                                 (if (> (string-length attributes) 0)
+                                     (tagCreatorH attributes (cdr cont) tag (string-append res "<"tag " " attributes ">" (car cont) "</"tag">"))
+                                     (tagCreatorH attributes (cdr cont) tag (string-append res "<"tag">" (car cont) "</"tag">")))
+                                 (tagCreatorH attributes (cdr cont) tag res))
+|#
+
 
 (define html(tagCreator "html"))
 (define head(tagCreator "head"))
@@ -29,7 +48,7 @@ Functions for building the html reprentation
 (define li(tagCreator "li"))
 (define h1(tagCreator "h1"))
 
-
+#|
 (html ""
       (head "" "entered startTime" " entered endTime")
       (body ""
@@ -46,6 +65,7 @@ Functions for building the html reprentation
                        (td "" "appointment2" "")
                        (td "" "startTime" "")
                        (td "" "endTime" "")) "") "")) ;;this is not getting catched properly
+|#
 
 #|
 Functions for handling the time for each
@@ -108,16 +128,17 @@ Function for calculating the time in minutes
                                                    (present-appointments-in-interval (cdr (parseCalendar cal '())) from-time to-time res)
                                                    ))))
 
-;; from-time < (car apt) < to-time or from-time < (car (cdr apt)) < to-time
+;; from-time < aptStartTime < aptEndTime < to-time
 (define appointmentsInInterval?( lambda(apt from-time to-time)
-                                 (if (or
-                                      (and (< (calcTimeSeconds from-time) (calcTimeSeconds (car apt)))
-                                           (> (calcTimeSeconds to-time) (calcTimeSeconds (car apt))))
-                                      (and (< (calcTimeSeconds from-time) (calcTimeSeconds (car (cdr apt))))
-                                           (> (calcTimeSeconds to-time) (calcTimeSeconds (car (cdr apt))))))
-                                     #t
-                                     #f
-                                     )))
+                                  (let* ([aptStartTime (getStartTime apt)]
+                                         [aptEndTime (getEndTime apt)])
+                                    (if (and
+                                         (< (calcTimeSeconds from-time) (calcTimeSeconds aptStartTime)) ;; from-time < aptStartTime
+                                         (< (calcTimeSeconds aptStartTime) (calcTimeSeconds aptEndTime)) ;; aptStartTime < aptEndTime
+                                         (< (calcTimeSeconds aptEndTime) (calcTimeSeconds to-time))) ;; aptEndTime < to-time
+                                        #t
+                                        #f
+                                        ))))
 
 #|
 Alternative:
@@ -127,6 +148,14 @@ Alternative:
 10^2 hour
 10^1 min
 |#
+
+
+#|
+Functions for getting different elements from the appoint
+|#
+(define getStartTime first)
+(define getEndTime second)
+(define getContent third)
 
                    
 #|
@@ -191,7 +220,7 @@ Functions for parsing through the calendar
 Required functions
 |#
 
-;;add appointment
+;;add appointment to the end of a flattened calendar
 (define addAppointmentToCalendar( lambda(cal apt)
                                    (append (flatten-calendar cal) (list apt))))
 
@@ -199,12 +228,12 @@ Required functions
 (define addCalendarToCalendar( lambda(cal addCal)
                                 (addAppointmentToCalendar cal addCal)))
 
-;;delete appointment
+;;delete appointment, returns the resulting flattened calendar
 (define deleteAppointmentFromCalendar( lambda(cal apt)
                                         (deleteAppointmentHelper (parseCalendar cal '()) apt '())
                                         ))
 
-(define deleteAppointmentHelper( lambda(cal apt res)
+(define deleteAppointmentHelper( lambda(cal apt res) ;;update with getters
                                   (if (empty? cal)
                                       res
                                       (if (and
@@ -215,22 +244,57 @@ Required functions
                                           (deleteAppointmentHelper (cdr cal) apt res)
                                           (deleteAppointmentHelper (cdr cal) apt (cons (car cal) res))
                                           ))))
-#|
-;;delete calendar
-(define deleteCalendarFromCalendar( lambda(cal delCal)
-                                     "not implemented"))
-|#
 
 (define present-calendar-html( lambda(cal from-time to-time)
-                                (appointments-in-interval (parseCalendar cal1 '()) from-time to-time '()) ;;start with sorting the from-time to-time, then create html from the returned list
+                                (create-calendar-html (get-appointments-in-interval (parseCalendar cal1 '()) from-time to-time '()) from-time to-time "") ;;start with sorting the from-time to-time, then create html from the returned list
                                 )) 
 
-(define appointments-in-interval( lambda(cal from-time to-time res)
+(define get-appointments-in-interval( lambda(cal from-time to-time res)
                                  (if (empty? cal)
                                      res
                                      (if (appointmentsInInterval? (car cal) from-time to-time)
-                                         (appointments-in-interval (cdr cal) from-time to-time (cons (car cal) res))
-                                         (appointments-in-interval (cdr cal) from-time to-time res)))))
+                                         (get-appointments-in-interval (cdr cal) from-time to-time (cons (car cal) res))
+                                         (get-appointments-in-interval (cdr cal) from-time to-time res)))))
+
+(define create-calendar-html( lambda(cal from-time to-time res)
+                               (if (empty? cal)
+                                   res
+                                   (create-calendar-html (cdr cal) from-time to-time (appointment-to-html (car cal) from-time to-time))
+                               )))
+
+(define appointment-to-html( lambda(apt from-time to-time)                                                 
+                          (html ""
+                                (head "" "" "")
+                                (body "" 
+                                      (table "border='1' style='width:100%'"                                           
+                                             (tr ""
+                                                 (td "" "Appointments" "")
+                                                 (td "" "from-time: " (convert-time-toString from-time))
+                                                 (td "" "to-time: " (convert-time-toString to-time))) 
+                                             (tr ""
+                                                 (td "" "appointment1" "")
+                                                 (td "" (convert-appointment-toString apt) "")
+                                                 (td "" "endTime" "")) ;;this is not getting catched
+                                             (tr ""
+                                                 (td "" "appointment2" "")
+                                                 (td "" "startTime" "")
+                                                 (td "" "endTime" "")) ;;this is not getting catched
+                                             (tr ""
+                                                 (td "" "appointment2" "")
+                                                 (td "" "startTime" "")
+                                                 (td "" "endTime" "")) ;;this is not getting catched properly
+                                             "") "")) 
+                          ))
+
+(define convert-appointment-toString( lambda(apt)
+                                       (string-append (convert-time-toString (getStartTime apt)) " to " (convert-time-toString (getEndTime apt)) " " (getContent apt))
+                                       ))
+
+(define convert-time-toString( lambda(time)
+                                (string-append (number->string (getDay time)) "/" (number->string (getMonth time)) "/" (number->string (getYear time)) " " (number->string (getHour time)) ":" (number->string (getMinute time)))
+                                ))
+
+
 
 (define find-appointments (lambda(cal pred)
                             (filter pred (parseCalendar cal '()))
@@ -262,7 +326,7 @@ Required functions
 (define flatten-calendar (lambda(cal)
                            (cons "calendar" (parseCalendar cal '())))) 
 
-(define appointments-overlap? (lambda(ap1 ap2)
+(define appointments-overlap? (lambda(ap1 ap2) ;;update with getters
                                 (if (and (checkIfAppointment? ap1) (checkIfAppointment? ap2))
                                     (cond ((< (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car ap2))) #f)
                                           ((< (calcTimeSeconds (car (cdr ap2))) (calcTimeSeconds (car ap1))) #f)
@@ -351,8 +415,15 @@ Testing functionality section
 
 (parseCalendar cal1 '())
 "-----------------------------------------"
-(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 15 59)) ;; investigate if the entire appointments have to be within the interval or simply part of it...
-
+(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59)) ;; investigate if the entire appointments have to be within the interval or simply part of it...
+;(appointment-to-html (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass9") (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59)) 
+#|
+(tr ""
+    (td "" "test1" "t6" "fourthparameter")
+    (td "" "test2" "t7" "fourthparameter")
+    (td "" "test3" "t8" "fourthparameter")
+    "")
+|#
 
                        
 ;(find-appointments (parseCalendar cal1 '()) list?)
