@@ -151,20 +151,10 @@ Functions for parsing through the calendar
                         (if (empty? cal)
                             res
                             (cond ((checkIfCalendar? cal) (parseCalendar (cdr cal) res))
-                                  ((checkIfCalendar? (car cal)) (append (parseCalendar (cdr cal) res) (parseCalendar (car cal) '()))) ; (flattenCal (car cal) cal res))
+                                  ((checkIfCalendar? (car cal)) (append (parseCalendar (cdr cal) res) (parseCalendar (car cal) '())))
                                   ((checkIfAppointment? (car cal)) (parseCalendar (cdr cal) (cons (car cal) res)))
-                                  (else (parseCalendar (cdr cal) res)) ;; for some reason run into else
+                                  (else (parseCalendar (cdr cal) res))
                                   ))))
-
-#|
-(define flattenCal( lambda(cal calMem res)
-                     (if (empty? cal)
-                         (parseCalendar (cdr calMem) res)
-                         (cond ((checkIfCalendar? cal) (parseCalendar (cdr cal) res))
-                               ((checkIfCalendar? (car cal)) (flattenCal (cdr cal) calMem res))
-                               ((checkIfAppointment? (car cal)) (flattenCal (cdr cal) calMem (cons (car cal) res)))
-                               ))))
-|#
 
 
 (define checkIfCalendar?( lambda(cal)
@@ -185,30 +175,32 @@ Functions for parsing through the calendar
 Required functions
 |#
 
-;;add appointment to the end of a flattened calendar
+;;add appointment to the end of a calendar
 (define addAppointmentToCalendar( lambda(cal apt)
-                                   (append (flatten-calendar cal) (list apt))))
+                                   (append cal (list apt))))
 
-;;add calendar
+;;add calendar to the end of a calendar
 (define addCalendarToCalendar( lambda(cal addCal)
                                 (addAppointmentToCalendar cal addCal)))
 
-;;delete appointment, returns the resulting flattened calendar
+;;delete appointment, returns the resulting flattened calendar. Update to support nested calendars!!!
 (define deleteAppointmentFromCalendar( lambda(cal apt)
                                         (deleteAppointmentHelper (parseCalendar cal '()) apt '())
                                         ))
 
-(define deleteAppointmentHelper( lambda(cal apt res) ;;update with getters
+(define deleteAppointmentHelper( lambda(cal apt res)
                                   (if (empty? cal)
                                       res
                                       (if (and
-                                           (eqv? (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car apt)))
-                                           (eqv? (calcTimeSeconds (car (cdr (car cal)))) (calcTimeSeconds (car (cdr apt))))
-                                           (equal? (car (cdr (cdr (car cal)))) (car (cdr (cdr apt))))
+                                           (eqv? (calcTimeSeconds (car (car cal))) (calcTimeSeconds (getStartTime apt)))
+                                           (eqv? (calcTimeSeconds (car (cdr (car cal)))) (calcTimeSeconds (getEndTime apt)))
+                                           (equal? (car (cdr (cdr (car cal)))) (getContent apt))
                                            )
-                                          (deleteAppointmentHelper (cdr cal) apt res)
-                                          (deleteAppointmentHelper (cdr cal) apt (cons (car cal) res))
+                                          (deleteAppointmentHelper (cdr cal) apt res) ;;delete the appointment by not adding it again
+                                          (deleteAppointmentHelper (cdr cal) apt (cons (car cal) res)) ;;add it
                                           ))))
+
+
 
 (define present-calendar-html( lambda(cal from-time to-time)
                                 (create-calendar-html (get-appointments-in-interval (parseCalendar cal1 '()) from-time to-time '()) from-time to-time "") ;;start with sorting the from-time to-time, then create html from the returned list
@@ -228,7 +220,7 @@ Required functions
                                          (body ""
                                                (table "border='1' style='width:100%'"
                                                       (tr ""
-                                                          (td "" "Appointments" "")
+                                                          (td "" "Appointment content" "")
                                                           (td "" "from-time: " (convert-time-toString from-time))
                                                           (td "" "to-time: " (convert-time-toString to-time)))
                                                       res)))
@@ -265,66 +257,66 @@ Required functions
                                  (find-filtered-appointment (filter pred (parseCalendar cal '())) "last" '()) ;; add logic to only get latest appointment
                                  ))
 
+;;update this in a way so that it can use a not operator
 (define find-filtered-appointment (lambda(cal marker res)
                                     (if (empty? cal)
                                         res
-                                        (if (equal? marker "first")
-                                            (cond ((empty? res) (find-filtered-appointment (cdr cal) "first" (car cal)))
-                                                  ((< (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "first" (car cal)))
-                                                  ((> (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "first" res))
-                                                  )
-                                            (cond ((empty? res) (find-filtered-appointment (cdr cal) "last" (car cal)))
-                                                  ((> (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "last" (car cal)))
-                                                  ((< (calcTimeSeconds (car (car cal))) (calcTimeSeconds (car res))) (find-filtered-appointment (cdr cal) "last" res))
-                                                  )
-                                        ))))
+                                        (if (empty? res)
+                                             (find-filtered-appointment (cdr cal) marker (car cal))
+                                             (cond ((equal? marker "first") (if (is-first-appointment? (car cal) res)
+                                                                                (find-filtered-appointment (cdr cal) marker (car cal))
+                                                                                (find-filtered-appointment (cdr cal) marker res)))
+                                                   ((equal? marker "last") (if (is-latest-appointment? (car cal) res)
+                                                                               (find-filtered-appointment (cdr cal) marker (car cal))
+                                                                               (find-filtered-appointment (cdr cal) marker res)
+                                                                               )))))))
 
+;;returns true if the startTime of the provided appointment is smaller than the startTime of the currently stored appointment
+;;else it returns false
+(define is-first-appointment? (lambda(apt res)
+                             (cond ((< (calcTimeSeconds (getStartTime apt)) (calcTimeSeconds (getStartTime res))) #t)
+                                   ((> (calcTimeSeconds (getStartTime apt)) (calcTimeSeconds (getStartTime res))) #f)
+                                   )))
 
+;;returns the opposite of is-first-appointment?.
+;;Notice that in case the appointment startTimes are equal this will result in overriden res for is-latest-appointment? but not for is-first-appointment?.
+(define is-latest-appointment? (lambda(apt res)
+                                 (not (is-first-appointment? apt res))
+                                 ))
+
+;;returns a single flattened calendar storing all appointments
 (define flatten-calendar (lambda(cal)
                            (cons "calendar" (parseCalendar cal '())))) 
 
-(define appointments-overlap? (lambda(ap1 ap2) ;;update with getters
+
+
+(define appointments-overlap? (lambda(ap1 ap2)
                                 (if (and (checkIfAppointment? ap1) (checkIfAppointment? ap2))
-                                    (cond ((< (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car ap2))) #f)
-                                          ((< (calcTimeSeconds (car (cdr ap2))) (calcTimeSeconds (car ap1))) #f)
-                                          ((and (= (calcTimeSeconds (car ap1)) (calcTimeSeconds (car ap2))) (= (calcTimeSeconds (car (cdr ap1))) (calcTimeSeconds (car (cdr ap2))))) #t)
+                                    (cond ((< (calcTimeSeconds (getEndTime ap1)) (calcTimeSeconds (getStartTime ap2))) #f) ;;if ap1 ends before ap2 starts there can't be overlap
+                                          ((< (calcTimeSeconds (getEndTime ap2)) (calcTimeSeconds (getStartTime ap1))) #f) ;;if ap2 ends before ap1 starts there can't be overlap
+                                          ((and (= (calcTimeSeconds (getStartTime ap1)) (calcTimeSeconds (getStartTime ap2))) (= (calcTimeSeconds (getEndTime ap1)) (calcTimeSeconds (getEndTime ap2)))) #t)
                                           (else #t)
                                           )
                                     #f)))
 
+;; todo, just start with flatten and reuse above to check all...
 (define calendars-overlap? (lambda(cal1 cal2)
-                             "not implemented"))
+                             (calendars-overlapH (parseCalendar cal1 '()) (parseCalendar cal2 '()) (parseCalendar cal2 '()))
+                             ))
 
+(define calendars-overlapH (lambda(cal1 cal2 cal2Copy)
+                             (if (empty? cal1)
+                                 #f
+                                 (calendars-overlap-iter cal1 cal2 cal2Copy)
+                                 )))
 
-
-
-
-#|
-Ignore for now
-|#
-(define findAttributeInLst(lambda(lst res)
-                            (if (empty? lst)
-                                res
-                                [cond ((symbol? (car lst)) (findAttributeInLst (cdr lst) (cons (car lst) res)))
-                                      ((list? (car lst)) (findAttributeInLst (car lst) '()) (findAttributeInLst (cdr lst) res)) ; do something here
-                                      (else (findAttributeInLst (cdr lst) res))
-                                ]
-                                )))
-
-(define findContentInLst(lambda(lst res)
-                          (if (empty? lst)
-                                res
-                                [if (string? (car lst))
-                                    [findContentInLst (cdr lst) (cons (car lst) res)]
-                                    [findContentInLst (cdr lst) res]
-                                ]
-                                )))
-
-;(findAttributeInLst (list (list 's 'b 'd) 'd 3 'g) '())
-
-
-
-
+(define calendars-overlap-iter (lambda(cal1 cal2 cal2Copy)
+                                 (if (equal? (appointments-overlap? (car cal1) (car cal2)) #t)
+                                     #t
+                                     (if (empty? cal2)
+                                         (calendars-overlapH (cdr cal1) cal2Copy cal2Copy) ;;go to next appointment in cal1 and start over on cal2
+                                         (calendars-overlap-iter cal1 (cdr cal2) cal2Copy) ;;loop cal2
+                                         ))))
 
 #|
 Testing functionality section
@@ -350,6 +342,19 @@ Testing functionality section
                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass9")))
               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "pass10")))
 
+
+(define cal2 (createCalender
+              (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content1")
+               (createCalender
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass1")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass2"))
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass3")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass4"))
+              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass5")   
+              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "pass10")))
+
 ;cal1
 ;(appointmentsInInterval? (car (cdr (parseCalendar cal1 '()))) (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54))
 ;(present-appointments-in-interval cal1 (createTime 2005 11 24 10 55) (createTime 2005 11 24 20 54) '())
@@ -372,7 +377,12 @@ Testing functionality section
 
 (parseCalendar cal1 '())
 "-----------------------------------------"
-(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59)) ;; investigate if the entire appointments have to be within the interval or simply part of it...
+;(find-first-appointment (parseCalendar cal1 '()) list?)
+;(find-last-appointment (parseCalendar cal1 '()) list?)
+(calendars-overlap? cal1 cal2)
+
+
+;(present-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59)) ;; investigate if the entire appointments have to be within the interval or simply part of it...
 ;(appointment-to-html (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass9") (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59)) 
 #|
 (tr ""
@@ -385,4 +395,4 @@ Testing functionality section
                        
 ;(find-appointments (parseCalendar cal1 '()) list?)
 ;"-----------------------------------------"
-;(find-first-appointment (parseCalendar cal1 '()) list?) 
+;(find-first-appointment (parseCalendar cal1 '()) list?)
