@@ -84,7 +84,7 @@
 
 \title{Programming Paradigms project 1: \\ A list based calendar}
 
-\author{\fnms{Bjarke Thorn} \snm{Carstens} (bcarst09)}, %
+\author{\fnms{Bjarke Thorn} \snm{Carstens} (bcarst09@student.aau.dk), studentnr. 20093648}, %
 
 \address{Department of Computer Science, Aalborg University, Denmark}
 %----------------------------------------------------------------------------------------
@@ -110,48 +110,15 @@ Functional programming \sep Scheme \sep Calendar system
 %\begin{multicols}{2} % Two-column layout throughout the main article text
 
 \section{Introduction} \label{sec:introduction}
-I have written a program for providing a calendar in scheme that I have named: \\ 
-\textbf{A list based calendar}, referred to by the acronym \textbf{ALBC}. 
-The report split up in different sections such that: \autoref{sec:introduction} explains the overall functionality of \textbf{ALBC} system, \autoref{sec:functionality} explains more into depth with the specific functionality of the system, \autoref{sec:internalrepresentations} explains the details regarding the internal representations of the \textbf{ALBC}, \autoref{sec:reflection} details reflections regarding the assignment, and finally \autoref{sec:userguide} introduces a short user guide for the testing \textbf{ALBC}. 
-
-Representational requirements:
-\begin{itemize}
-\item Creating calendars that contain calendars and/or appointments.
-\item Creating appointments with start- and endtime, as well as text content.
-\item Creating time, which is a requirement for creating appointment.
-\end{itemize}
-
-\section{Functionality} \label{sec:functionality}
-
-\textbf{ALBC} provides functionality for manipulation of the 
-
-\begin{itemize}
-\item (addAppointmentToCalendar cal apt)
-\item (deleteAppointmentFromCalendar cal apt), which deletes only from the root calendar and could simply have used \textbf{equal?} instead of checking for equivalent parameters. 
-\item (deleteCalendarFromCalendar cal delCal), delCal is the calendar to delete. Unlike the implementation of \textbf{deleteAppointmentFromCalendar} this function simply uses \textbf{equal?} to compare the calendars.
-\item (present-calendar-html cal from-time to-time), returns html that shows a table and includes all appointments that take place between the provided time-interval of from-time to to-time.
-\end{itemize}
-
-Utility functionality:
-\begin{itemize}
-\item (flatten-calendar cal)
-\item (parseCalendar cal res), this function returns a list of all appointments that were provided in the original calendar , and thus it is practically a flattened calendar without a "calendar" identifier in the first index. 
-\item (find-appointments cal pred)
-\item (find-first-appointment cal pred)
-\item (find-last-appointment cal pred)
-\item (appointments-overlap? ap1 ap2)
-\item (calendars-overlap? cal1 cal2)
-\end{itemize}
-
-
-
+I have written a program for constructing a simple calendar in scheme that I have named: \textbf{A list based calendar}, which will be referred to by the acronym \textbf{ALBC}. 
+This report split up in different sections such that: \autoref{sec:internalrepresentations} explains the details regarding the internal representations of the \textbf{ALBC}. \autoref{sec:functionality} explains the overall functionality of the \textbf{ALBC} system and later goes into depth with specifics regarding the functionality of the system. \autoref{sec:reflection} details reflections regarding the assignment, and finally \autoref{sec:userguide} introduces a short user guide for the testing \textbf{ALBC}. 
 
 
 \section{Internal representations} \label{sec:internalrepresentations}
-This section will explain the details regarding the internal representations used in \textbf{ALBC} for calendars, appointments and time. 
+This section will explain the details regarding the internal representations used in \textbf{ALBC} for calendars, appointments and time. Furthermore the system includes getters for accessing appointment and time lists.
 
 \subsection{Calendar}
-The representation of a calendar in the system is a list that always starts with the string identifier "calendar" as the first index. The rest of the indices can than consist of either calendars or appointments, though there is no actual checks that ensure this \bjarke{see here, check for "calendar" to identify calendar, could check for length of the appointment lists} which would be ideal. One way of properly identifying appointments would be to have included a specific string or symbol in the first index of each appointment. An example of a simple calendar containing only appointments can be seen in \autoref{code:calendarRepresentation}
+The representation of a calendar in \textbf{ALBC} is a list that always starts with the string identifier "calendar" as the first index. The rest of the indices can then consist of either calendars or appointments, though there is no actual checks that ensure this, which would have been ideal. One way to perform the checks would be to simply check on the first index when including calendars, and to include a similar identifier into appointment representation to identify appointments in similar fasion. An example of a simple calendar containing only appointments can be seen in \autoref{code:calendarRepresentation} below. \\
 
 \begin{lstlisting}[frame=single, caption={Calendar representation}, label={code:calendarRepresentation}] 
 
@@ -165,10 +132,8 @@ The representation of a calendar in the system is a list that always starts with
   ((2005 11 24 11 55) (2005 11 24 13 56) "my content7"))
 \end{lstlisting}
 
-
-
 \subsection{Appointment}
-Appointments in system is represented by a list of size 3, where the first interval in the startTime, the second interval the endTime and the third,and last, interval the text content of the appointment. An appointment is constructed by the function \textbf{(createAppointment startTime endTime content)} see \autoref{code:appointmentCreation} and \autoref{code:appointmentRepresentation} for the resulting list representation.
+Appointments in system are represented by a list of size 3, where the first interval in the startTime, the second interval the endTime and the third interval, the text content of the appointment. Also, as previously mentioned, an appointment sadly has no unique identifier to easily identify it. A new appointment is constructed by the function \textbf{(createAppointment startTime endTime content)} see \autoref{code:appointmentCreation}, and \autoref{code:appointmentRepresentation} for the resulting list representation.
 
 \begin{lstlisting}[frame=single, caption={Creating an appointment}, label={code:appointmentCreation}] 
 (createAppointment 
@@ -181,16 +146,15 @@ Appointments in system is represented by a list of size 3, where the first inter
 '((2005 11 24 23 55) (2005 11 24 23 56) "my content2")
 \end{lstlisting}
 
-When creating an appointment with \textbf{(createAppointment startTime endTime content)} it is ensured that:
+When creating an appointment with \textbf{(createAppointment startTime endTime content)} the function ensures the following, or returns an error in case any of the conditions fail:
 \begin{itemize}
-\item The startTime is before the endTime, which is assisted by a function \textbf{(calcTimeSeconds time)} that converts each of the times to seconds before a comparison is done.
-\item The date of the appointment takes place over one day. In other words that the dates of start- and endTime are on the same day, of the same month, of the same year.
+\item The startTime is before the endTime, this check is assisted by a function \textbf{(calcTimeSeconds time)} that converts each of \textit{time} list to seconds before a comparison is performed.
+\item The date, startTime and endTime, of the appointment takes place on one day. This means that the dates of start- and endTime are on the same day, month, and on the same year.
 \end{itemize}
-In case any of the above condition fail and error is returned.
 
 
 \subsection{Time}
-The representation of time in \textbf{ALBC} is a list of (year month day hour minute), an example is: \textbf{(2005 11 24 23 56)}. A time is create with the function (createTime year month day hour minute), see \autoref{code:createTime}.
+The representation of time in \textbf{ALBC} is a list of (year month day hour minute), where all elements are represented by integers, an example of this is: \textbf{(2005 11 24 23 56)}. A \textit{time} list is create by the function \textbf{(createTime year month day hour minute)}, see \autoref{code:createTime} below.
 
 \begin{lstlisting}[frame=single, caption={Definition of (createTime year month day hour minute)}, label={code:createTime}]  % Start your code-block
 
@@ -202,21 +166,58 @@ The representation of time in \textbf{ALBC} is a list of (year month day hour mi
 	 	(checkMinute minute))))  
 \end{lstlisting}
 
-The check functions ensure the following for the time format:
+When creating a \textit{time} list, the \textbf{checkYear, checkMonth, checkDay, checkHour and checkMinutes} functions ensure the following for the time format is well formed meaning that: The Provided year is bigger than 0, month is between 1-12, day is between 1-31, hour is between 0-23 and minute is between 0-59.
+
+\section{Functionality} \label{sec:functionality}
+\textbf{ALBC} provides functionality for creating a root calendar containing calendars and/or appointments. It is possible to add, and delete, calendar and appointments to the root calendar, and the root calendar can also be flattened such that nested appointments are placed into a single root calendar consisting only of appointments. 
+\textbf{ALBC} also provides functionality for presenting the appointments in a calendar within a html table. It can find appointments in a given calendar, based on a fitting predicate specified by the user, as well as return only the earliest or latest appointment in a calendar based on a user specified time interval. This functionality and more is provided by the following functions: 
+
 \begin{itemize}
-\item
+\item \textbf{(addAppointmentToCalendar cal apt)} : simply adds the provided appointment to the end of the provided calendar.
+\item \textbf{(deleteAppointmentFromCalendar cal apt)} : deletes the appointment \textit{apt} only from the root calendar \textit{cal}, ideally it could be made recursively. 
+\item \textbf{(deleteCalendarFromCalendar cal delCal)} : deletes the calendar \textit{delCal} only from the root calendar, ideally it could be made recursively. Unlike the implementation of \textbf{deleteAppointmentFromCalendar} this function simply uses \textbf{equal?} to compare the calendars.
+\end{itemize}
+
+The following functions provide functionality for presentation and filtering of calendars and appointments in \textbf{ALBC}:
+\begin{itemize}
+\item \textbf{(flatten-calendar cal)} : simply flattens the provided calendar, such that a calendar only including the appointments of the original calendar is returned, with the exception of the first index which always holds the string "calendar".
+\item \textbf{(parseCalendar cal res)} : works the same way as \textbf{flatten-calendar} except that the resulting calendar only holds appointments. 
+\item \textbf{(present-calendar-html cal from-time to-time)} : returns html that shows a table including all appointments that take place in the provided time-interval of from-time to to-time. Both the start time and end time of an appointment has to be within the interval. An example of the output can be seen in the appendix see \autoref{sec:generatedhtml}.
+\item \textbf{(find-appointments cal pred)} : returns all appointments in cal that satisfies the predicate \textit{pred}.
+\item \textbf{(find-first-appointment cal pred)} : returns only the earliest appointment, based on startTime, that satisfies the predicate \textit{pred}. In case of identical appointments, the first appointment is kept.
+\item \textbf{(find-last-appointment cal pred)} : returns only the latest appointment, based on startTime, that satisfies the predicate \textit{pred}. Does the opposite of \textbf{find-first-appointment} in case of identical appointments, and thus replaces the previous appointment.
+\item \textbf{(appointments-overlap? ap1 ap2)} : returns true if the time of provided appointments overlap.
+\item \textbf{(calendars-overlap? cal1 cal2)} : returns true if the provide calendars have appointments that overlap in time.
 \end{itemize}
 
 
+
 \section{Reflection} \label{sec:reflection}
-\subsection*{static typing vs dynamic typing}
+I didn't get to finish the program to the point that I had wished for. Mainly I had the hope being able to finish a function for generating a html calendar presented in a proper weekly format. Also not including an identifier in my appointments early made me not wanting to spend time refactoring it, otherwise this is one of the first things I would change as it could be changed rather easily. More format checking on the internal representations would also have been an easy next step. It could also be considered the functions \textbf{find-last-appointment} and \textbf{find-first-appointment} should be able to return multiple appointments in case of appointments with equal time.
 
-\subsection*{Functional vs object-oriented programming}
-recursion, encapsulation and internal representation (relation to problem domain), big code bases (readability), requirements of the programmer (recursion can be hard), handling state (can be deficult but also nice for functional because..)
+\subsection*{Static typing vs dynamic typing}
+I actually didn't pay much attention to the dynamic typing of scheme, though in a way it was nice not having to worry about  being explicit with types. Especially because there are plenty of other aspects to use your attention on, and think about, when programming scheme. I never really had any point where type was an issue.
 
+\subsection*{Functional vs object-oriented paradigm}
+The leap from the object-oriented paradigm was rather big, with my currently experience structuring a program, for a specific domain, in OOP is a lot easier. Especially learning to use recursion properly hasn't exactly been a walk in the park. My impression is that the success of using it properly is very dependent on avoiding complexity, especially by being able to keep functions small and decomposed properly. Most of all this has been an issue while trying to generate proper formed html. In this context one of the bigger issues was keeping track of state, in a sense it's nice to avoid assignment since recursion could become a nightmare with it. Though on the other hand trying to keep track of state through recursion in a function parameters wasn't always easy to me. 
+Another aspect that has been quite different is the issue of encapsulation and internal representation. Working with lists hasn't been much of an issue, however I didn't properly consider the issue of being able to identify my appointments, other than checking for complete equality of the entire list.
 
+One thing I'm not looking forward to is using scheme has a language for a bigger code bases, as it already becomes a little difficult for me to manage it with around 500 lines of code. Obviously this aspect may greatly improve with more experience and learning of best practices. Though to me it seems that the functional paradigm does require a bit more of the programmer. Though I'm looking forward to getting familiar with either scala or F\# in the future.
+
+\subsection*{Higher order functions}
+I didn't make particularly much use of higher order functions, which could probably have been quite useful. Though one of the cases where I did use it was for the different variations of \textbf{(find-appointments cal pred)}, which was neat even though the most attractive filter I can think of is getting appointments within a specific time-interval or with a specific text content.   
 
 \section{User guide for ALBC} \label{sec:userguide}
+The attached program file contains quite a bit of commented out test code, from line 355-481, which can easily be used for testing the various functions defined. It also includes 4 predefined calendars named: "cal1", "cal2", "cal3" and "cal4", which may come in handy when testing. The last part of the file from line 484 is unfinished code that was the start of trying to generate the week based html calendar.
+
+
+\section{Appendix}
+\begin{figure}
+\includegraphics[scale=0.4]{./pic.png}
+\label{sec:generatedhtml}
+\caption{Generated html}
+\end{figure}
+
 
 %----------------------------------------------------------------------------------------
 %	REFERENCE LIST

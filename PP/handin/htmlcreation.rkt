@@ -1,17 +1,26 @@
 #lang racket
 
 #|
+Author:
+Bjarke Thorn Carstens
+bcarst09@student.aau.dk
+studentnr. 20093648
+|#
+
+
+#|
 Functions for building the html reprentation
 |#
+
 (define tagCreator(lambda(tag)
-                    (lambda(attributes . contents)  ;(lambda r)
+                    (lambda(attributes . contents)
                       (tagCreatorH attributes contents tag)
                       )))
 
 (define tagCreatorH(lambda(attributes cont tag)
                      (if (empty? cont)
                          ""
-                         (string-append "<" tag (findAttributes attributes) ">" (findContent cont) "</" tag ">") ;;add find attributes later
+                         (string-append "<" tag (findAttributes attributes) ">" (findContent cont) "</" tag ">")
                          )))
 
 
@@ -73,7 +82,7 @@ Functions for handling the time for each
                           (error "the format of minute is unacceptable, minute has to be between 0-59"))))
 
 #|
-Function for calculating the time in minutes
+Function for calculating the time in seconds
 |#
 (define calcTimeSeconds (lambda (time)
                    (+ (calcYear (getYear time)) (calcMonth (getMonth time)) (calcDay (getDay time)) (calcHour (getHour time)) (calcMinute (getMinute time)))))
@@ -149,7 +158,7 @@ Functions for parsing through the calendar
                                   (else (parseCalendar (cdr cal) res))
                                   ))))
 
-
+;;function for check if the parameter is a calendar
 (define checkIfCalendar?( lambda(cal)
                           (if (list? cal)
                                 (if (string? (car cal))
@@ -158,9 +167,10 @@ Functions for parsing through the calendar
                                       )
                                 #f)))
 
-(define checkIfAppointment?( lambda(cal)
-                             (if (list? cal)
-                                 (string? (last cal))
+;;naive function for check if the parameter is an appointment
+(define checkIfAppointment?( lambda(apt)
+                             (if (list? apt)
+                                 (string? (last apt))
                                  #f)))
 
 
@@ -227,6 +237,7 @@ Functions for converting the provided calendar within a time-interval to html
                                          (get-appointments-in-interval (cdr cal) from-time to-time (cons (car cal) res))
                                          (get-appointments-in-interval (cdr cal) from-time to-time res)))))
 
+;; checks if the provided appointment apt takes place in the provided time-interval
 ;; from-time < aptStartTime < aptEndTime < to-time
 (define appointmentsInInterval?( lambda(apt from-time to-time)
                                   (let* ([aptStartTime (getStartTime apt)]
@@ -239,7 +250,7 @@ Functions for converting the provided calendar within a time-interval to html
                                         #f
                                         ))))
 
-
+;;first constructs the first row of the html table and then adds the rest as it's constructed
 (define create-calendar-html( lambda(cal from-time to-time res)
                                (if (empty? cal)
                                    (html ""
@@ -277,15 +288,17 @@ Functions for finding appointments based on difference predicates
                             (reverse (filter pred (parseCalendar cal '())))
                             ))
 
+;;find the earliest appointment based on predicate pred
 (define find-first-appointment (lambda(cal pred)
-                                 (find-filtered-appointment (filter pred (parseCalendar cal '())) "first" '()) ;; add logic to only get earliest appointment
+                                 (find-filtered-appointment (filter pred (parseCalendar cal '())) "first" '())
                                  ))
 
+;;find the latest appointment based on predicate pred
 (define find-last-appointment (lambda(cal pred)
-                                 (find-filtered-appointment (filter pred (parseCalendar cal '())) "last" '()) ;; add logic to only get latest appointment
+                                 (find-filtered-appointment (filter pred (parseCalendar cal '())) "last" '())
                                  ))
 
-;;update this in a way so that it can use a not operator
+
 (define find-filtered-appointment (lambda(cal marker res)
                                     (if (empty? cal)
                                         res
@@ -342,6 +355,7 @@ Functions for checking whether two appointsment or two calendars overlap
                                  (calendars-overlap-iter cal1 cal2 cal2Copy)
                                  )))
 
+;;iterates through the calendars and returns true if two appointments within the two calendars overlap
 (define calendars-overlap-iter (lambda(cal1 cal2 cal2Copy)
                                  (if (equal? (appointments-overlap? (car cal1) (car cal2)) #t)
                                      #t
@@ -479,6 +493,7 @@ Test present-calendar-html and other html function
                                   ))
 |#
 
+#|
 "------------------------------------------------------------------------------"
 (define create-weekly-calendar-html( lambda(cal from-time to-time counter res)
                                       (if (empty? cal)                                         
@@ -525,5 +540,6 @@ Test present-calendar-html and other html function
                        ))
 
 "---------------------------------"
-cal4
+|#
+;cal4
 ;(create-weekly-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59) 1 "")
