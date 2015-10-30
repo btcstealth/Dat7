@@ -1,0 +1,243 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Journal Article
+% LaTeX Template
+% Version 1.3 (9/9/13)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{IOS-Book-Article}
+\usepackage{amsmath}
+\usepackage{booktabs,array}
+\newcolumntype{A}{@{}llccc >{$} r <{$} @{} >{${}} l <{$}@{}}
+\usepackage{fancyhdr}
+
+\usepackage{lipsum} % Package to generate dummy text throughout this template
+\usepackage{graphicx}
+\usepackage[sc]{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\linespread{1.05} % Line spacing - Palatino needs more space between lines
+\usepackage{microtype} % Slightly tweak font spacing for aesthetics
+
+%\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
+\usepackage{multicol} % Used for the two-column layout of the document
+\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage{booktabs} % Horizontal rules in tables
+\usepackage{float} % Required for tables and figures in the multi-column environment - they need to be placed in specific locations with the [H] (e.g. \begin{table}[H])
+\usepackage{hyperref} % For hyperlinks in the PDF
+
+\usepackage{lettrine} % The lettrine is the first enlarged letter at the beginning of the text
+\usepackage{paralist} % Used for the compactitem environment which makes bullet points with less space between them
+
+\usepackage{listings}
+
+%\usepackage{abstract} % Allows abstract customization
+%\renewcommand{\abstractnamefont}{\normalfont\bfseries} % Set the "Abstract" text to bold
+%\renewcommand{\abstracttextfont}{\normalfont\small\itshape} % Set the abstract itself to small italic text
+
+\usepackage{pdfpages}
+
+%[doi=false,issn=false,url=false,language=false, keywords=false]
+\usepackage{natbib}
+%\usepackage{titlesec} % Allows customization of titles
+%\renewcommand\thesection{\Roman{section}} % Roman numerals for the sections
+%\renewcommand\thesubsection{\Roman{subsection}} % Roman numerals for subsections
+%\titleformat{\section}[block]{\large\scshape\centering}{\thesection.}{1em}{} % Change the look of the section titles
+%\titleformat{\subsection}[block]{\large}{\thesubsection.}{1em}{} % Change the look of the section titles
+
+%\usepackage{fancyhdr} % Headers and footers
+%\pagestyle{fancy} % All pages have headers and footers
+%\fancyhead{} % Blank out the default header
+%\fancyfoot{} % Blank out the default footer
+%\fancyhead[C]{Running title $\bullet$ November 2012 $\bullet$ Vol. XXI, No. 1} % Custom header text
+%\fancyfoot[RO,LE]{\thepage} % Custom footer text
+\usepackage{color}
+\newcommand{\mads}[1]{\textcolor{red}{[MadsR: #1]}}
+\newcommand{\bjarke}[1]{\textcolor{red}{[Bjarke: #1]}}
+\newcommand{\anders}[1]{\textcolor{red}{[Anders: #1]}}
+\newcommand{\mathias}[1]{\textcolor{red}{[Mathias: #1]}}
+
+\begin{document}
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newpage
+
+\pagestyle{plain}
+%\def\thepage{}
+\setcounter{page}{1}
+
+\begin{frontmatter}    
+
+\title{Programming Paradigms project 1: \\ A list based calendar}
+
+\author{\fnms{Bjarke Thorn} \snm{Carstens} (bcarst09)}, %
+
+\address{Department of Computer Science, Aalborg University, Denmark}
+%----------------------------------------------------------------------------------------
+
+
+%\maketitle % Insert title
+
+%\thispagestyle{fancy} % All pages have headers and footers
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT
+%----------------------------------------------------------------------------------------
+
+\begin{keyword}
+Functional programming \sep Scheme \sep Calendar system
+\end{keyword}
+\end{frontmatter}
+
+%----------------------------------------------------------------------------------------
+%	ARTICLE CONTENTS
+%----------------------------------------------------------------------------------------
+
+%\begin{multicols}{2} % Two-column layout throughout the main article text
+
+\section{Introduction} \label{sec:introduction}
+I have written a program for providing a calendar in scheme that I have named: \\ 
+\textbf{A list based calendar}, referred to by the acronym \textbf{ALBC}. 
+The report split up in different sections such that: \autoref{sec:introduction} explains the overall functionality of \textbf{ALBC} system, \autoref{sec:functionality} explains more into depth with the specific functionality of the system, \autoref{sec:internalrepresentations} explains the details regarding the internal representations of the \textbf{ALBC}, \autoref{sec:reflection} details reflections regarding the assignment, and finally \autoref{sec:userguide} introduces a short user guide for the testing \textbf{ALBC}. 
+
+Representational requirements:
+\begin{itemize}
+\item Creating calendars that contain calendars and/or appointments.
+\item Creating appointments with start- and endtime, as well as text content.
+\item Creating time, which is a requirement for creating appointment.
+\end{itemize}
+
+\section{Functionality} \label{sec:functionality}
+
+\textbf{ALBC} provides functionality for manipulation of the 
+
+\begin{itemize}
+\item (addAppointmentToCalendar cal apt)
+\item (deleteAppointmentFromCalendar cal apt), which deletes only from the root calendar and could simply have used \textbf{equal?} instead of checking for equivalent parameters. 
+\item (deleteCalendarFromCalendar cal delCal), delCal is the calendar to delete. Unlike the implementation of \textbf{deleteAppointmentFromCalendar} this function simply uses \textbf{equal?} to compare the calendars.
+\item (present-calendar-html cal from-time to-time), returns html that shows a table and includes all appointments that take place between the provided time-interval of from-time to to-time.
+\end{itemize}
+
+Utility functionality:
+\begin{itemize}
+\item (flatten-calendar cal)
+\item (parseCalendar cal res), this function returns a list of all appointments that were provided in the original calendar , and thus it is practically a flattened calendar without a "calendar" identifier in the first index. 
+\item (find-appointments cal pred)
+\item (find-first-appointment cal pred)
+\item (find-last-appointment cal pred)
+\item (appointments-overlap? ap1 ap2)
+\item (calendars-overlap? cal1 cal2)
+\end{itemize}
+
+
+
+
+
+\section{Internal representations} \label{sec:internalrepresentations}
+This section will explain the details regarding the internal representations used in \textbf{ALBC} for calendars, appointments and time. 
+
+\subsection{Calendar}
+The representation of a calendar in the system is a list that always starts with the string identifier "calendar" as the first index. The rest of the indices can than consist of either calendars or appointments, though there is no actual checks that ensure this \bjarke{see here, check for "calendar" to identify calendar, could check for length of the appointment lists} which would be ideal. One way of properly identifying appointments would be to have included a specific string or symbol in the first index of each appointment. An example of a simple calendar containing only appointments can be seen in \autoref{code:calendarRepresentation}
+
+\begin{lstlisting}[frame=single, caption={Calendar representation}, label={code:calendarRepresentation}] 
+
+'("calendar"
+  ((2005 11 24 23 55) (2005 11 24 23 56) "my content1")
+  ((2005 11 24 23 55) (2005 11 24 23 56) "my content2")
+  ((2005 11 24 15 55) (2005 11 24 16 54) "my content3")
+  ((2005 11 24 11 55) (2005 11 24 13 54) "my content4")
+  ((2005 11 24 15 55) (2005 11 24 16 54) "my content5")
+  ((2005 11 24 11 55) (2005 11 24 13 54) "my content6")
+  ((2005 11 24 11 55) (2005 11 24 13 56) "my content7"))
+\end{lstlisting}
+
+
+
+\subsection{Appointment}
+Appointments in system is represented by a list of size 3, where the first interval in the startTime, the second interval the endTime and the third,and last, interval the text content of the appointment. An appointment is constructed by the function \textbf{(createAppointment startTime endTime content)} see \autoref{code:appointmentCreation} and \autoref{code:appointmentRepresentation} for the resulting list representation.
+
+\begin{lstlisting}[frame=single, caption={Creating an appointment}, label={code:appointmentCreation}] 
+(createAppointment 
+	(createTime 2005 11 24 23 55)
+	(createTime 2005 11 24 23 56) 
+	"my content2")
+\end{lstlisting}
+
+\begin{lstlisting}[frame=single, caption={Appointment representation}, label={code:appointmentRepresentation}] 
+'((2005 11 24 23 55) (2005 11 24 23 56) "my content2")
+\end{lstlisting}
+
+When creating an appointment with \textbf{(createAppointment startTime endTime content)} it is ensured that:
+\begin{itemize}
+\item The startTime is before the endTime, which is assisted by a function \textbf{(calcTimeSeconds time)} that converts each of the times to seconds before a comparison is done.
+\item The date of the appointment takes place over one day. In other words that the dates of start- and endTime are on the same day, of the same month, of the same year.
+\end{itemize}
+In case any of the above condition fail and error is returned.
+
+
+\subsection{Time}
+The representation of time in \textbf{ALBC} is a list of (year month day hour minute), an example is: \textbf{(2005 11 24 23 56)}. A time is create with the function (createTime year month day hour minute), see \autoref{code:createTime}.
+
+\begin{lstlisting}[frame=single, caption={Definition of (createTime year month day hour minute)}, label={code:createTime}]  % Start your code-block
+
+(define createTime (lambda(year month day hour minute)
+ 	(list (checkYear year) 
+ 		(checkMonth month) 
+ 		(checkDay day) 
+	 	(checkHour hour) 
+	 	(checkMinute minute))))  
+\end{lstlisting}
+
+The check functions ensure the following for the time format:
+\begin{itemize}
+\item
+\end{itemize}
+
+
+\section{Reflection} \label{sec:reflection}
+\subsection*{static typing vs dynamic typing}
+
+\subsection*{Functional vs object-oriented programming}
+recursion, encapsulation and internal representation (relation to problem domain), big code bases (readability), requirements of the programmer (recursion can be hard), handling state (can be deficult but also nice for functional because..)
+
+
+
+\section{User guide for ALBC} \label{sec:userguide}
+
+%----------------------------------------------------------------------------------------
+%	REFERENCE LIST
+%----------------------------------------------------------------------------------------
+
+%\bibliographystyle{plainnat}
+
+
+
+%\begin{thebibliography}{99} % Bibliography - this is intentionally simple in this template
+
+%\bibitem[Figueredo and Wolf, 2009]{Figueredo:2009dg}
+%Figueredo, A.~J. and Wolf, P. S.~A. (2009).
+%\newblock Assortative pairing and life history strategy - a cross-cultural
+ % study.
+%\newblock {\em Human Nature}, 20:317--330.
+ 
+%\end{thebibliography}
+
+%----------------------------------------------------------------------------------------
+
+%\end{multicols}
+
+\end{document}

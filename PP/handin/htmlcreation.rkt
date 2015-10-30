@@ -76,7 +76,7 @@ Functions for handling the time for each
 Function for calculating the time in minutes
 |#
 (define calcTimeSeconds (lambda (time)
-                   (+ (calcYear (car time)) (calcMonth (list-ref time 1)) (calcDay (list-ref time 2)) (calcHour (list-ref time 3)) (calcMinute (list-ref time 4)))))
+                   (+ (calcYear (getYear time)) (calcMonth (getMonth time)) (calcDay (getDay time)) (calcHour (getHour time)) (calcMinute (getMinute time)))))
 
 (define calcYear (lambda (year)
                    (* year 12 31 24 60 60)))
@@ -123,9 +123,8 @@ Functions for getting different elements from the appointment time list
 
 
 #|
-Internal calender representation: The root is a calender which is a list of appointments
+Internal calender representation: The root is a calender which is a list of appointments or calendars
 |#
-;; add logic here to make sure that startTime and endTime has a specific max interval in between
 (define createAppointment( lambda(startTime endTime content)
                             (if (and (< (calcTimeSeconds startTime) (calcTimeSeconds endTime))
                                      (= (getYear startTime) (getYear endTime))
@@ -134,7 +133,9 @@ Internal calender representation: The root is a calender which is a list of appo
                                 (list startTime endTime content)
                                 (error "startTime of appointment has to be before endTime, and have to be scheduled on the same year, month and day"))))
 
-(define createCalender( lambda(apt1 . aptn) (apply list "calendar" apt1 aptn)))
+;;the calendar can take 
+(define createCalender( lambda(apt1 . aptn)
+                         (apply list "calendar" apt1 aptn)))
 
 #|
 Functions for parsing through the calendar
@@ -396,13 +397,20 @@ Creating test calendars
               (createCalender
                (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content1")
                (createCalender
-               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2") 
-               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass1")
-               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass2"))
-               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "pass3")
+                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass2"))
                (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "pass4"))
-              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass5")   
-              (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "pass10")))
+              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "pass5")))
+
+
+(define cal4 (createCalender              
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content1")               
+               (createAppointment (createTime 2005 11 24 23 55) (createTime 2005 11 24 23 56) "my content2") 
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "my content3")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "my content4")
+               (createAppointment (createTime 2005 11 24 15 55) (createTime 2005 11 24 16 54) "my content5")
+               (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 54) "my content6")
+              (createAppointment (createTime 2005 11 24 11 55) (createTime 2005 11 24 13 56) "my content7")   
+              ))
 
 
 
@@ -481,35 +489,41 @@ Test present-calendar-html and other html function
                                                              (tr ""
                                                                  (td "" "Appointment content" "")
                                                                  (td "" "from-time: " (convert-time-toString from-time))
-                                                                 (td "" "to-time: " (convert-time-toString to-time)))
+                                                                 (td "" "to-time: " (convert-time-toString to-time)))                                                            
                                                              res
                                                              )))
-                                          (if (or (equal? counter 1) (equal? counter 8) (equal? counter 15) (equal? counter 22) (equal? counter 29))
-                                              (create-weekly-calendar-html (cdr cal) from-time to-time (+ counter 1) ;;start with tr
-                                                                           (string-append (create-week-table-html (car cal) (constructDateList 1 '()) res) res))
+                                          ;
+                                              (create-weekly-calendar-html (cdr cal) from-time to-time counter ;;start with tr
+                                                                           (string-append (create-week-table-html (car cal) (constructDateList 1 '()) #f counter res) res))
                                                ;;just do single tds
                                                                            
-                                              )
+                                              
                                           
                                )))
 
 (define constructDateList( lambda(currDate res)
                    (if (< currDate 32)
                        (constructDateList (+ currDate 1) (cons (list currDate 11) res))
-                       res
+                       (reverse res)
                        )))
 
-(define create-week-table-html( lambda(cal dates res)
-                                 (if (empty? dates)
-                                     res
-                                     (tr ""
-                                         (create-week-table-html cal (cdr dates) (construct-td (number->string (car (car dates))) (number->string (car (cdr (car dates))))))))
-                                           ;(else (create-week-table-html cal (cdr dates) (+ counter 1) (construct-td (number->string (car (car dates))) (number->string (car (cdr (car dates)))))))
-                                    ))
+(define create-week-table-html( lambda(cal dates tdBool counter res)
+                                 (cond ((empty? dates) res)
+                                       ((equal? tdBool #t) 
+                                        (create-week-table-html cal (cdr dates) #t (+ counter 1) (construct-td  (car (car dates))) (car (cdr (car dates)))))) ;;add td
+                                       ((or (equal? counter 1) (equal? counter 8) (equal? counter 15) (equal? counter 22) (equal? counter 29))
+                                        (create-week-table-html cal dates tdBool (+ counter 7) (tr "" (construct-td (car (car dates)) (car (cdr (car dates))) (+ counter 7))))                             
+                                        ) ;;construct tds for the 7 next days
 
-(define construct-td( lambda(day month)
-                       (td "" (string-append month "/" day) "")
+                                       ;(else (create-week-table-html cal (cdr dates) #t (+ counter 1) (construct-td (car (car dates)) (car (cdr (car dates))))))
+                                 ))
+
+
+(define construct-td( lambda(day month counter)
+                       
+                       (td "" (string-append (number->string day) "/" (number->string month)) "")
                        ))
 
 "---------------------------------"
-(create-weekly-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59) 1 "")
+cal4
+;(create-weekly-calendar-html cal1 (createTime 2005 11 24 11 58) (createTime 2005 11 24 23 59) 1 "")
